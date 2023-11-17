@@ -34,13 +34,13 @@ class Scientists(Resource):
         try:
             scientist = Scientist(name=params['name'], field_of_study=params['field_of_study'])
         except ValueError as v_error:
-            return make_response({"errors": [str(v_error)]}, 422)
+            return make_response({"errors": [str(v_error)]}, 400)
 
         db.session.add(scientist)
         db.session.commit()
         response = make_response(
             scientist.to_dict(rules=('-missions',)),
-            201
+            200
         )
         return response
 
@@ -55,7 +55,7 @@ class ScientistById(Resource):
         else:
             return make_response(
                {"error": "Scientist not found"},
-               404
+               400
             )
 
     def patch(self, id):
@@ -68,12 +68,12 @@ class ScientistById(Resource):
             try:
                 setattr(scientist, attr, params[attr])
             except ValueError as v_error:
-                return make_response({"errors": [str(v_error)]}, 422)
+                return make_response({"errors": [str(v_error)]}, 400)
 
         db.session.commit()
         response = make_response(
             scientist.to_dict(rules=('-missions',)),
-            201
+            202
         )
         return response
 
@@ -85,13 +85,35 @@ class ScientistById(Resource):
         db.session.delete(scientist)
         db.session.commit()
         response = make_response(
-            "",
-            200
+            {},
+            204
         )
         return response     
-
     
 api.add_resource(ScientistById, '/scientists/<int:id>')
+
+@app.route('/planets')
+def get_planets():
+    planets = [planet.to_dict(rules=('-missions',)) for planet in Planet.query.all()]
+    return make_response(planets, 200)
+
+@app.route('/missions', methods=["POST"])
+def post_mission():
+    if request.method == "POST":
+        params = request.json
+        try:
+            new_mission = Mission(name=params['name'], planet_id=params['planet_id'], scientist_id=params['scientist_id'])
+        except ValueError as v_error:
+            return make_response({"errors": [str(v_error)]}, 400)
+
+        db.session.add(new_mission)
+        db.session.commit()
+
+        response = make_response(
+            new_mission.to_dict(),
+            201
+        )
+        return response
 
 if __name__ == '__main__':
     app.run(port=5555, debug=True)
