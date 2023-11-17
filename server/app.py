@@ -31,7 +31,11 @@ class Scientists(Resource):
 
     def post(self):
         params = request.json
-        scientist = Scientist(name=params['name'], field_of_study=params['field_of_study'])
+        try:
+            scientist = Scientist(name=params['name'], field_of_study=params['field_of_study'])
+        except ValueError as v_error:
+            return make_response({"errors": [str(v_error)]}, 422)
+
         db.session.add(scientist)
         db.session.commit()
         response = make_response(
@@ -56,15 +60,36 @@ class ScientistById(Resource):
 
     def patch(self, id):
         scientist = Scientist.query.filter_by(id = id).first()
+        if not scientist:
+            return make_response({"error": "Scientist not found"}, 404) 
+        
         params = request.json
         for attr in params:
-            setattr(scientist, attr, params[attr])
+            try:
+                setattr(scientist, attr, params[attr])
+            except ValueError as v_error:
+                return make_response({"errors": [str(v_error)]}, 422)
+
         db.session.commit()
         response = make_response(
             scientist.to_dict(rules=('-missions',)),
             201
         )
         return response
+
+    def delete(self, id):
+        scientist = Scientist.query.filter_by(id = id).first()
+        if not scientist:
+            return make_response({"error": "Scientist not found"}, 404)
+
+        db.session.delete(scientist)
+        db.session.commit()
+        response = make_response(
+            "",
+            200
+        )
+        return response     
+
     
 api.add_resource(ScientistById, '/scientists/<int:id>')
 
