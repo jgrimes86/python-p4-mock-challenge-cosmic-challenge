@@ -29,6 +29,17 @@ class Scientists(Resource):
         scientists = [scientist.to_dict(rules=('-missions',)) for scientist in Scientist.query.all()]
         return make_response(scientists, 200)
 
+    def post(self):
+        params = request.json
+        scientist = Scientist(name=params['name'], field_of_study=params['field_of_study'])
+        db.session.add(scientist)
+        db.session.commit()
+        response = make_response(
+            scientist.to_dict(rules=('-missions',)),
+            201
+        )
+        return response
+
 api.add_resource(Scientists, '/scientists')
 
 class ScientistById(Resource):
@@ -42,6 +53,18 @@ class ScientistById(Resource):
                {"error": "Scientist not found"},
                404
             )
+
+    def patch(self, id):
+        scientist = Scientist.query.filter_by(id = id).first()
+        params = request.json
+        for attr in params:
+            setattr(scientist, attr, params[attr])
+        db.session.commit()
+        response = make_response(
+            scientist.to_dict(rules=('-missions',)),
+            201
+        )
+        return response
     
 api.add_resource(ScientistById, '/scientists/<int:id>')
 
